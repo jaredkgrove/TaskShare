@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -8,13 +9,40 @@ import (
 	"os"
 )
 
+type task struct {
+	Kind     string `json:"kind"`
+	ID       string `json:"id"`
+	Etag     string `json:"etag"`
+	Title    string `json:"title"`
+	Updated  string `json:"updated"`
+	SelfLink string `json:"selfLink"`
+	Position string `json:"position"`
+	Status   string `json:"status"`
+	Due      string `json:"due"`
+	Parent   string `json:"parent"`
+}
+
+type taskResponse struct {
+	Kind          string `json:"kind"`
+	Etag          string `json:"etag"`
+	NextPageToken string `json:"nextPageToken"`
+	Items         []task `json:"items"`
+}
+
+type taskList struct {
+	kind          string
+	etag          string
+	nextPageToken string
+	items         []task
+}
+
 func main() {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", "https://www.googleapis.com/tasks/v1/lists/RW9yQXktOXBOZ09rQS1rUw/tasks", nil)
 
 	//get the new access token from google api playground or something like that
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %a", getHardCodedAccessToken()))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", getHardCodedAccessToken()))
 	response, err := client.Do(req)
 
 	if err != nil {
@@ -26,27 +54,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(responseData))
+	var t taskResponse
+	err = json.Unmarshal([]byte(responseData), &t)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(t.Items[0].Title)
 }
-
-// type Task struct {
-// 	kind     string
-// 	id       string
-// 	etag     string
-// 	title    string
-// 	updated  string
-// 	selfLink string
-// 	position string
-// 	status   string
-// 	due      string
-// }
-
-// type TaskList struct {
-// 	kind          string
-// 	etag          string
-// 	nextPageToken string
-// 	items         []Task
-// }
 
 // {
 //     "kind": "tasks#tasks",
