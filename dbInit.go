@@ -1,71 +1,63 @@
 package main
 
 import (
-	// "encoding/json"
-	// "fmt"
-	// "io/ioutil"
-	// "log"
-	// "net/http"
-	// "os"
-
+	"database/sql"
+	"encoding/json"
 	"fmt"
-	// _ "github.com/mattn/go-sqlite3"
+	"io/ioutil"
+	"log"
+	"net/http"
+
+	"strconv"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
-type task struct {
-	Kind     string `json:"kind"`
-	ID       string `json:"id"`
-	Etag     string `json:"etag"`
-	Title    string `json:"title"`
-	Updated  string `json:"updated"`
-	SelfLink string `json:"selfLink"`
-	Position string `json:"position"`
-	Status   string `json:"status"`
-	Due      string `json:"due"`
-	Parent   string `json:"parent"`
-}
+// type taskResponse struct {
+// 	Kind          string `json:"kind"`
+// 	Etag          string `json:"etag"`
+// 	NextPageToken string `json:"nextPageToken"`
+// 	Items         []task `json:"items"`
+// }
 
-type taskResponse struct {
-	Kind          string `json:"kind"`
-	Etag          string `json:"etag"`
-	NextPageToken string `json:"nextPageToken"`
-	Items         []task `json:"items"`
-}
+// type taskList struct {
+// 	kind          string
+// 	etag          string
+// 	nextPageToken string
+// 	items         []task
+// }
 
-type taskList struct {
-	kind          string
-	etag          string
-	nextPageToken string
-	items         []task
-}
+// type task struct {
+// 	Kind     string `json:"kind"`
+// 	ID       string `json:"id"`
+// 	Etag     string `json:"etag"`
+// 	Title    string `json:"title"`
+// 	Updated  string `json:"updated"`
+// 	SelfLink string `json:"selfLink"`
+// 	Position string `json:"position"`
+// 	Status   string `json:"status"`
+// 	Due      string `json:"due"`
+// 	Parent   string `json:"parent"`
+// }
 
-func main() {
-	fmt.Println("hi")
-	// InitializeSqlliteDB()
-
-	// client := &http.Client{}
-
-	// req, err := http.NewRequest("GET", "https://www.googleapis.com/tasks/v1/lists/RW9yQXktOXBOZ09rQS1rUw/tasks", nil)
-
-	// //get the new access token from google api playground or something like that
-	// req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", getHardCodedAccessToken()))
-	// response, err := client.Do(req)
-
-	// if err != nil {
-	// 	fmt.Print(err.Error())
-	// 	os.Exit(1)
-	// }
-
-	// responseData, err := ioutil.ReadAll(response.Body)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// var t taskResponse
-	// err = json.Unmarshal(responseData, &t)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(t.Items[0].Title)
+func InitializeSqlliteDB() {
+	// sql.Register("sqlite3", &SQLiteDriver{}) //Not sure this is needed
+	database, _ := sql.Open("sqlite3", "./TaskShareLite.db")
+	statement, _ := database.Prepare("DROP TABLE IF EXISTS")
+	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS task (taskId INTEGER PRIMARY KEY, kind TEXT, id TEXT, etag TEXT, title TEXT)")
+	statement.Exec()
+	statement, _ = database.Prepare("INSERT INTO task (kind, id, etag, title) VALUES (?, ?, ?, ?)")
+	statement.Exec("tasks#task", "bEItaXpWUF9wVlpleXN5VA", "\"LTIxMjU0NzE1Nzc\"", "Do Weekly Goals")
+	rows, _ := database.Query("SELECT taskId, kind, id, etag, title FROM task")
+	var taskId int
+	var kind string
+	var id string
+	var etag string
+	var title string
+	for rows.Next() {
+		rows.Scan(&taskId, &kind, &id, &etag, &title)
+		fmt.Println(strconv.Itoa(taskId) + ": " + kind + " " + id + " " + etag + " " + title)
+	}
 }
 
 // {
@@ -320,3 +312,4 @@ func main() {
 //         }
 //     ]
 // }
+c
