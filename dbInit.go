@@ -2,11 +2,11 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
+	// "io/ioutil"
+	// "log"
+	// "net/http"
 
 	"strconv"
 
@@ -43,7 +43,9 @@ import (
 func InitializeSqlliteDB() {
 	// sql.Register("sqlite3", &SQLiteDriver{}) //Not sure this is needed
 	database, _ := sql.Open("sqlite3", "./TaskShareLite.db")
-	statement, _ := database.Prepare("DROP TABLE IF EXISTS")
+	statement1, _ := database.Prepare("DROP TABLE IF EXISTS task")
+	statement1.Exec()
+
 	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS task (taskId INTEGER PRIMARY KEY, kind TEXT, id TEXT, etag TEXT, title TEXT)")
 	statement.Exec()
 	statement, _ = database.Prepare("INSERT INTO task (kind, id, etag, title) VALUES (?, ?, ?, ?)")
@@ -312,4 +314,3 @@ func InitializeSqlliteDB() {
 //         }
 //     ]
 // }
-c

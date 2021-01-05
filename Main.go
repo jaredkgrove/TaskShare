@@ -41,6 +41,8 @@ type taskList struct {
 
 func main() {
 	fmt.Println("hi")
+	InitializeSqlliteDB()
+	fmt.Println("bye")
 	// InitializeSqlliteDB()
 
 	// client := &http.Client{}
