@@ -2,38 +2,55 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"cloud.google.com/go/firestore"
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/entity"
+	"google.golang.org/api/iterator"
 )
 
 //BookMySQL mysql repo
-type TaskFirestore struct {
+type UserFirestore struct {
 	Client *firestore.Client
 }
 
 //NewTaskFirestore create new repository
-func NewTaskFirestore(client *firestore.Client) *TaskFirestore {
-	return &TaskFirestore{
+func NewUserFirestore(client *firestore.Client) *UserFirestore {
+	return &UserFirestore{
 		Client: client,
 	}
 }
 
 //Create a task
-func (r *TaskFirestore) Create(e *entity.Task) (entity.ID, error) {
+func (r *UserFirestore) Create(e *entity.User) (entity.ID, error) {
 	return "not implemented", nil
 }
 
 //Get a task
-func (r *TaskFirestore) Get(ctx context.Context, id entity.ID) (*entity.Task, error) {
-	dsnap, err := r.Client.Collection("tasks").Doc(id).Get(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var t entity.Task
-	dsnap.DataTo(&t)
+func (r *UserFirestore) GetUsers(ctx context.Context) (*[]entity.User, error) {
+	iter := r.Client.Collection("users").Documents(ctx)
+	defer iter.Stop()
+	var users []entity.User
+	for {
+		var u entity.User
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			// TODO: Handle error.
+			fmt.Println(err)
+		}
 
-	return &t, nil
+		if err := doc.DataTo(&u); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		u.FirestoreID = doc.Ref.ID
+		users = append(users, u)
+	}
+
+	return &users, nil
 }
 
 //Update a book

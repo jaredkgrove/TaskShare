@@ -2,29 +2,82 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"cloud.google.com/go/firestore"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
+	"google.golang.org/api/tasks/v1"
+
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/repository"
-	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/usecase/task"
-	"fmt"
+	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/usecase/googleUser"
+	taskList "github.com/jaredkgrove/TaskShare/TaskSyncProcessor/usecase/tasklist"
 )
 
 func main() {
 	ctx := context.Background()
 
-	sa := option.WithCredentialsFile("../../ServiceAccountKey.json")
+	// sa := option.WithCredentialsFile("") //does this need to change?
 
-	client, err := firestore.NewClient(ctx, "taskshare", sa)
+	client, err := firestore.NewClient(ctx, "taskshare")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer client.Close()
-	repo := repository.NewTaskFirestore(client)
-	service := task.NewService(repo)
-	t, err := service.GetTask(ctx, "doesnotmatter")
-	fmt.Println(t)
+	googleUserRepo := repository.NewGoogleUserFirestore(client)
+	taskListRepo := repository.NewTaskListFirestore(client)
+
+	googleUserService := googleUser.NewService(googleUserRepo)
+	taskListService := taskList.NewService(taskListRepo)
+	fmt.Println(taskListService)
+	googleUsers, err := googleUserService.GetGoogleUsers(ctx)
+	// taskLists, err := taskListService.GetTaskLists(ctx)
+
+	for _, user := range *googleUsers {
+		// tasksClient := config.Client(ctx, user.Token)
+		// config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/tasks")
+		// google.CredentialsFromJSON()
+		token := new(oauth2.Token)
+		token.AccessToken = user.Token
+		token.RefreshToken = user.RefreshToken
+		// token.RefreshToken = {{ From DataBase }}
+		// token.Expiry = {{ From DataBase }}
+		// token.TokenType = {{ From DataBase }}
+		fmt.Println(user.Email)
+		config := &oauth2.Config{}
+		// ...
+		// token, err := config.Exchange(ctx, ...)
+
+		tokenSource := config.TokenSource(ctx, token)
+
+		fmt.Println(tokenSource.Token())
+
+		tasksService, err := tasks.NewService(ctx, option.WithTokenSource(tokenSource))
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		resp, err := tasksService.Tasklists.List().Do()
+		if err != nil {
+			fmt.Println(err)
+		}
+		for _, taskl := range resp.Items {
+			fmt.Println(taskl)
+		}
+		// lists, err := taskListService.List(ctx, user.UserId)
+		// for _, list := range *lists {
+		// 	fmt.Println(list)
+		// }
+
+		// if err != nil {
+		// 	fmt.Println(err)
+		// }
+		// fmt.Println(tok)
+		// s, err := tasks.NewService(ctx, option.WithCredentials())
+	}
+
 }
 
 // {

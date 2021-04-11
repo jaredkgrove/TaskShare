@@ -2,39 +2,82 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"cloud.google.com/go/firestore"
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/entity"
+	"google.golang.org/api/iterator"
 )
 
 //BookMySQL mysql repo
-type TaskFirestore struct {
+type TaskListFirestore struct {
 	Client *firestore.Client
 }
 
 //NewTaskFirestore create new repository
-func NewTaskFirestore(client *firestore.Client) *TaskFirestore {
-	return &TaskFirestore{
+func NewTaskListFirestore(client *firestore.Client) *TaskListFirestore {
+	return &TaskListFirestore{
 		Client: client,
 	}
 }
 
-//Create a task
-func (r *TaskFirestore) Create(e *entity.Task) (entity.ID, error) {
-	return "not implemented", nil
-}
-
-//Get a task
-func (r *TaskFirestore) Get(ctx context.Context, id entity.ID) (*entity.Task, error) {
+func (r *TaskListFirestore) Get(ctx context.Context, id entity.ID) (*entity.TaskList, error) {
 	dsnap, err := r.Client.Collection("tasks").Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var t entity.Task
+	var t entity.TaskList
 	dsnap.DataTo(&t)
 
 	return &t, nil
 }
+
+func (r *TaskListFirestore) List(ctx context.Context, userId entity.ID) (*[]entity.TaskList, error) {
+	iter := r.Client.Collection("taskLists").Documents(ctx)
+	defer iter.Stop()
+	var taskLists []entity.TaskList
+	for {
+		var tl entity.TaskList
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			// TODO: Handle error.
+			fmt.Println(err)
+		}
+
+		if err := doc.DataTo(&tl); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		// tl.FirestoreID = doc.Ref.ID
+		taskLists = append(taskLists, tl)
+	}
+
+	return &taskLists, nil
+}
+
+//Create a task
+func (r *TaskListFirestore) Create(ctx context.Context, e *entity.TaskList) (entity.ID, error) {
+	doc, result, err := r.Client.Collection("taskLists").Add(ctx, e)
+	fmt.Println(err)
+	fmt.Println(result)
+	fmt.Println(doc.ID)
+	return doc.ID, nil
+}
+
+//Get a task
+// func (r *TaskFirestore) Get(ctx context.Context, id entity.ID) (*entity.TaskList, error) {
+// 	dsnap, err := r.Client.Collection("tasks").Doc(id).Get(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	var t entity.Task
+// 	dsnap.DataTo(&t)
+
+// 	return &t, nil
+// }
 
 //Update a book
 // func (r *BookMySQL) Update(e *entity.Book) error {
