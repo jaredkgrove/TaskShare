@@ -28,7 +28,7 @@ func (r *GoogleUserFirestore) Create(e *entity.GoogleUser) (entity.ID, error) {
 
 //Get a task
 func (r *GoogleUserFirestore) GetGoogleUsers(ctx context.Context) (*[]entity.GoogleUser, error) {
-	iter := r.Client.CollectionGroup("googleUsers").Documents(ctx)
+	iter := r.Client.CollectionGroup("googleUser").Documents(ctx)
 	defer iter.Stop()
 	var googleUsers []entity.GoogleUser
 	for {
