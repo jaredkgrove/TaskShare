@@ -2,30 +2,25 @@ package taskList
 
 import (
 	"context"
-
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/entity"
+	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/usecase/task"
+	googleTasks "google.golang.org/api/tasks/v1"
 )
 
 type Service struct {
-	repo Repository
+	taskListRepo Repository
+	taskRepo     task.Repository
 }
 
-func NewService(r Repository) *Service {
+func NewService(r Repository, tr task.Repository) *Service {
 	return &Service{
-		repo: r,
+		taskListRepo: r,
+		taskRepo:     tr,
 	}
 }
 
-// func (s *Service) CreateTask(kind, id, etag, title, updated, selfLink, position, status, due string) (entity.ID, error) {
-// 	t, err := entity.NewTask(kind, id, etag, title, updated, selfLink, position, status, due)
-// 	if err != nil {
-// 		return t.ID, err
-// 	}
-// 	return s.repo.Create(t)
-// }
-
 func (s *Service) Get(ctx context.Context, id entity.ID) (*entity.TaskList, error) {
-	t, err := s.repo.Get(ctx, id)
+	t, err := s.taskListRepo.Get(ctx, id)
 	if t == nil {
 		return nil, entity.ErrNotFound
 	}
@@ -35,20 +30,20 @@ func (s *Service) Get(ctx context.Context, id entity.ID) (*entity.TaskList, erro
 	return t, nil
 }
 
-func (s *Service) Create(ctx context.Context, e *entity.TaskList) (*entity.ID, error) {
-	t, err := s.repo.Create(ctx, e)
-	// if t == nil {
-	// 	return nil, entity.ErrNotFound
-	// }
-	// if err != nil {
-	// 	return nil, err
-	// }
+func (s *Service) SaveFromGoogleTaskList(ctx context.Context, googleTaskList *googleTasks.TaskList, userID string) error {
+	t, err := s.taskListRepo.FindByGoogleTaskListAndUser(ctx, googleTaskList, userID)
+	if err != nil {
+		return err
+	}
+	if (t == nil){
+		s.taskListRepo.CreateFromGoogleTaskList(ctx, googleTaskList, userID)
+	}
 
-	return &t, err
+	return nil
 }
 
-func (s *Service) List(ctx context.Context, userId entity.ID) (*[]entity.TaskList, error) {
-	t, err := s.repo.List(ctx, userId)
+func (s *Service) List(ctx context.Context,userId entity.ID) (*[]entity.TaskList, error) {
+	t, err := s.taskListRepo.List(ctx, userId)
 	if t == nil {
 		return nil, entity.ErrNotFound
 	}

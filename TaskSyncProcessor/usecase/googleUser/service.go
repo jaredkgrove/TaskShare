@@ -34,3 +34,11 @@ func (s *Service) GetGoogleUsers(ctx context.Context) (*[]entity.GoogleUser, err
 	}
 	return gu, nil
 }
+
+func (s *Service) Update(ctx context.Context, googleUser *entity.GoogleUser) error {
+	err := s.repo.Update(ctx, googleUser)
+	if err != nil {
+		return err
+	}
+	return nil
+}

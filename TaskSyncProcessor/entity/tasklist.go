@@ -1,16 +1,12 @@
 package entity
 
 type TaskList struct {
-	// Kind           string
-	// ID             string
-	// Due            string
+	ID             string
 	Etag           string
 	googleID       string
 	googleTaskLink string
 	Title          string
 	UserID         string
-	// Updated        string
-	// Position       string
 }
 
 // func NewTaskList(etag, title, selfLink, position, status, due string) (*TaskList, error) {

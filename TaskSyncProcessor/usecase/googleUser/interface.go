@@ -11,7 +11,7 @@ type Reader interface {
 }
 
 type Writer interface {
-	Create(e *entity.GoogleUser) (entity.ID, error)
+	Update(ctx context.Context, e *entity.GoogleUser) error
 }
 
 type Repository interface {
@@ -21,5 +21,6 @@ type Repository interface {
 
 type UseCase interface {
 	GetGoogleUsers() (*[]entity.GoogleUser, error)
+	Update() error
 	// CreateTaskList(kind, id, etag, title, updated, selfLink, position, status, due string) (entity.ID, error)
 }

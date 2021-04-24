@@ -7,6 +7,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/entity"
 	"google.golang.org/api/iterator"
+	googleTasks "google.golang.org/api/tasks/v1"
 )
 
 //BookMySQL mysql repo
@@ -30,6 +31,25 @@ func (r *TaskListFirestore) Get(ctx context.Context, id entity.ID) (*entity.Task
 	dsnap.DataTo(&t)
 
 	return &t, nil
+}
+
+func (r *TaskListFirestore) FindByGoogleTaskListAndUser(ctx context.Context, googleTaskList *googleTasks.TaskList, userID string) (*entity.TaskList, error) {
+	iter := r.Client.Collection("taskLists").Where(fmt.Sprint("users.", googleTaskList.Id), "==", userID).Limit(1).Documents(ctx)
+	defer iter.Stop()
+	var taskList entity.TaskList
+
+	doc, err := iter.Next()
+	if err == iterator.Done {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := doc.DataTo(&taskList); err != nil {
+		return nil, err
+	}
+
+	return &taskList, nil
 }
 
 func (r *TaskListFirestore) List(ctx context.Context, userId entity.ID) (*[]entity.TaskList, error) {
@@ -61,84 +81,23 @@ func (r *TaskListFirestore) List(ctx context.Context, userId entity.ID) (*[]enti
 //Create a task
 func (r *TaskListFirestore) Create(ctx context.Context, e *entity.TaskList) (entity.ID, error) {
 	doc, result, err := r.Client.Collection("taskLists").Add(ctx, e)
-	fmt.Println(err)
-	fmt.Println(result)
-	fmt.Println(doc.ID)
+	if err != nil {
+		fmt.Println(result)
+		return "", err
+	}
 	return doc.ID, nil
 }
 
-//Get a task
-// func (r *TaskFirestore) Get(ctx context.Context, id entity.ID) (*entity.TaskList, error) {
-// 	dsnap, err := r.Client.Collection("tasks").Doc(id).Get(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	var t entity.Task
-// 	dsnap.DataTo(&t)
+func (r *TaskListFirestore) CreateFromGoogleTaskList(ctx context.Context, googleTaskList *googleTasks.TaskList, userID string) (entity.ID, error) {
+	doc, wr, err := r.Client.Collection("taskLists").Add(ctx, map[string]interface{}{
+		"title":  googleTaskList.Title,
+		"users": map[string]interface{}{googleTaskList.Id: userID},
+	})
+	if err != nil {
+		fmt.Println(wr)
+		return "", err
+	}
+	return doc.ID, nil
+}
 
-// 	return &t, nil
-// }
 
-//Update a book
-// func (r *BookMySQL) Update(e *entity.Book) error {
-// 	e.UpdatedAt = time.Now()
-// 	_, err := r.db.Exec("update book set title = ?, author = ?, pages = ?, quantity = ?, updated_at = ? where id = ?", e.Title, e.Author, e.Pages, e.Quantity, e.UpdatedAt.Format("2006-01-02"), e.ID)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
-//Search books
-// func (r *BookMySQL) Search(query string) ([]*entity.Book, error) {
-// 	stmt, err := r.db.Prepare(`select id, title, author, pages, quantity, created_at from book where title like ?`)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	var books []*entity.Book
-// 	rows, err := stmt.Query("%" + query + "%")
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	for rows.Next() {
-// 		var b entity.Book
-// 		err = rows.Scan(&b.ID, &b.Title, &b.Author, &b.Pages, &b.Quantity, &b.CreatedAt)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		books = append(books, &b)
-// 	}
-
-// 	return books, nil
-// }
-
-//List books
-// func (r *BookMySQL) List() ([]*entity.Book, error) {
-// 	stmt, err := r.db.Prepare(`select id, title, author, pages, quantity, created_at from book`)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	var books []*entity.Book
-// 	rows, err := stmt.Query()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	for rows.Next() {
-// 		var b entity.Book
-// 		err = rows.Scan(&b.ID, &b.Title, &b.Author, &b.Pages, &b.Quantity, &b.CreatedAt)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		books = append(books, &b)
-// 	}
-// 	return books, nil
-// }
-
-//Delete a book
-// func (r *BookMySQL) Delete(id entity.ID) error {
-// 	_, err := r.db.Exec("delete from book where id = ?", id)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }

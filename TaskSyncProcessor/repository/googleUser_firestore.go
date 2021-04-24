@@ -9,7 +9,6 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-//BookMySQL mysql repo
 type GoogleUserFirestore struct {
 	Client *firestore.Client
 }
@@ -22,8 +21,12 @@ func NewGoogleUserFirestore(client *firestore.Client) *GoogleUserFirestore {
 }
 
 //Create a task
-func (r *GoogleUserFirestore) Create(e *entity.GoogleUser) (entity.ID, error) {
-	return "not implemented", nil
+func (r *GoogleUserFirestore) Update(ctx context.Context, user *entity.GoogleUser) error {
+	_, err := user.Ref.Update(ctx, []firestore.Update{{Path: "displayName", Value: user.DisplayName}, {Path: "token", Value: user.Token}}) //, email: user.Email, token: user.Token}}) //(ctx, user, firestore.MergeAll)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //Get a task
@@ -46,7 +49,7 @@ func (r *GoogleUserFirestore) GetGoogleUsers(ctx context.Context) (*[]entity.Goo
 			fmt.Println(err)
 			continue
 		}
-		gu.UserId = doc.Ref.Parent.Parent.ID
+		gu.Ref = doc.Ref
 		googleUsers = append(googleUsers, gu)
 	}
 
