@@ -28,26 +28,29 @@ func (r *TaskListFirestore) Get(ctx context.Context, id entity.ID) (*entity.Task
 		return nil, err
 	}
 	var t entity.TaskList
-	dsnap.DataTo(&t)
+	if err := dsnap.DataTo(&t); err != nil {
+		return nil, err
+	}
 
 	return &t, nil
 }
 
-func (r *TaskListFirestore) FindByGoogleTaskListAndUser(ctx context.Context, googleTaskList *googleTasks.TaskList, userID string) (*entity.TaskList, error) {
-	iter := r.Client.Collection("taskLists").Where(fmt.Sprint("users.", googleTaskList.Id), "==", userID).Limit(1).Documents(ctx)
+func (r *TaskListFirestore) FindByGoogleTaskListIDAndUserID(ctx context.Context, googleTaskListID string, userID string) (*entity.TaskList, error) {
+	iter := r.Client.Collection("taskLists").Where(fmt.Sprint("userGoogleMapping.", googleTaskListID), "==", userID).Limit(1).Documents(ctx)
 	defer iter.Stop()
 	var taskList entity.TaskList
 
-	doc, err := iter.Next()
+	dsnap, err := iter.Next()
 	if err == iterator.Done {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	if err := doc.DataTo(&taskList); err != nil {
+	if err := dsnap.DataTo(&taskList); err != nil {
 		return nil, err
 	}
+	taskList.Ref = dsnap.Ref
 
 	return &taskList, nil
 }
@@ -88,16 +91,25 @@ func (r *TaskListFirestore) Create(ctx context.Context, e *entity.TaskList) (ent
 	return doc.ID, nil
 }
 
-func (r *TaskListFirestore) CreateFromGoogleTaskList(ctx context.Context, googleTaskList *googleTasks.TaskList, userID string) (entity.ID, error) {
+func (r *TaskListFirestore) CreateFromGoogleTaskList(ctx context.Context, googleTaskList *googleTasks.TaskList, userID string) (*entity.TaskList, error) {
 	doc, wr, err := r.Client.Collection("taskLists").Add(ctx, map[string]interface{}{
-		"title":  googleTaskList.Title,
-		"users": map[string]interface{}{googleTaskList.Id: userID},
+		"title":             googleTaskList.Title,
+		"userGoogleMapping": map[string]interface{}{googleTaskList.Id: userID},
+		"users":             firestore.ArrayUnion(userID),
 	})
 	if err != nil {
 		fmt.Println(wr)
-		return "", err
+		return nil, err
 	}
-	return doc.ID, nil
+	var taskList entity.TaskList
+	dsnap, err := doc.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := dsnap.DataTo(&taskList); err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	taskList.Ref = dsnap.Ref
+	return &taskList, nil
 }
-
-

@@ -1,12 +1,13 @@
 package entity
 
+import "cloud.google.com/go/firestore"
+
 type TaskList struct {
-	ID             string
-	Etag           string
-	googleID       string
-	googleTaskLink string
-	Title          string
-	UserID         string
+	Ref               *firestore.DocumentRef
+	Etag              string
+	Title             string
+	UserGoogleMapping map[string]interface{}
+	Users             []string
 }
 
 // func NewTaskList(etag, title, selfLink, position, status, due string) (*TaskList, error) {
@@ -18,6 +19,16 @@ type TaskList struct {
 // 		googleTaskLink: selfLink,
 // 		// Position:       position,
 // 	}
+// }
+// func NewFromGoogleTaskListAndUserID(googleTaskList googleTasks.TaskList, userID string) (*TaskList, error) {
+// 	t := &TaskList{
+
+// 		Etag:  googleTaskList.Etag,
+// 		Title: googleTaskList.Title,
+// 		user: googleTaskList.Id
+// 	}
+// }
+
 // 	err := t.Validate()
 // 	return t, err
 // }

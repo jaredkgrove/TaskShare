@@ -3,6 +3,8 @@ package task
 import (
 	// "strings"
 
+	"context"
+
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/entity"
 )
 
@@ -19,12 +21,12 @@ func NewInmem() *inmem {
 	}
 }
 
-func (r *inmem) Create(e *entity.Task) (entity.ID, error) {
+func (r *inmem) Create(ctx context.Context, e *entity.Task) (entity.ID, error) {
 	r.m[e.ID] = e
 	return e.ID, nil
 }
 
-func (r *inmem) Get(id entity.ID) (*entity.Task, error) {
+func (r *inmem) Get(ctx context.Context, id entity.ID) (*entity.Task, error) {
 	if r.m[id] == nil {
 		return nil, entity.ErrNotFound
 	}

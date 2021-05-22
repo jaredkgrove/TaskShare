@@ -2,6 +2,7 @@ package taskList
 
 import (
 	"context"
+
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/entity"
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/usecase/task"
 	googleTasks "google.golang.org/api/tasks/v1"
@@ -30,20 +31,23 @@ func (s *Service) Get(ctx context.Context, id entity.ID) (*entity.TaskList, erro
 	return t, nil
 }
 
-func (s *Service) SaveFromGoogleTaskList(ctx context.Context, googleTaskList *googleTasks.TaskList, userID string) error {
-	t, err := s.taskListRepo.FindByGoogleTaskListAndUser(ctx, googleTaskList, userID)
+func (s *Service) SaveFromGoogleTaskList(ctx context.Context, googleTaskList *googleTasks.TaskList, userID string) (*entity.TaskList, error) {
+	tl, err := s.taskListRepo.FindByGoogleTaskListIDAndUserID(ctx, googleTaskList.Id, userID)
 	if err != nil {
-		return err
+		return tl, err
 	}
-	if (t == nil){
-		s.taskListRepo.CreateFromGoogleTaskList(ctx, googleTaskList, userID)
+	if tl == nil {
+		tl, err = s.taskListRepo.CreateFromGoogleTaskList(ctx, googleTaskList, userID)
+		if err != nil {
+			return tl, err
+		}
 	}
-
-	return nil
+	return tl, nil
 }
 
-func (s *Service) List(ctx context.Context,userId entity.ID) (*[]entity.TaskList, error) {
+func (s *Service) List(ctx context.Context, userId entity.ID) (*[]entity.TaskList, error) {
 	t, err := s.taskListRepo.List(ctx, userId)
+
 	if t == nil {
 		return nil, entity.ErrNotFound
 	}

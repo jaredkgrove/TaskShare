@@ -1,7 +1,9 @@
 package task_test
 
 import (
+	"context"
 	"testing"
+
 	// "time"
 
 	"github.com/jaredkgrove/TaskShare/TaskSyncProcessor/entity"
@@ -11,37 +13,36 @@ import (
 
 func newFixtureTask() *entity.Task {
 	return &entity.Task{
-		Kind:		"A Kind",
-		ID:       	"An ID",
-		Etag:     	"An Etag",
-		Title:    	"A Title",
-		Updated:  	"An Updated",
-		SelfLink: 	"A SelfLink",
-		Position: 	"A Position",
-		Status:   	"A Status",
-		Due:      	"A Due",
+		Kind:     "A Kind",
+		ID:       "An ID",
+		Etag:     "An Etag",
+		Title:    "A Title",
+		Updated:  "An Updated",
+		SelfLink: "A SelfLink",
+		Position: "A Position",
+		Status:   "A Status",
+		Due:      "A Due",
 	}
 }
 
 func Test_Create(t *testing.T) {
+	ctx := context.Background()
 	repo := task.NewInmem()
 	m := task.NewService(repo)
 	u := newFixtureTask()
-	_, err := m.CreateTask(u.Kind, u.ID, u.Etag, u.Title, u.Updated, u.SelfLink, u.Position, u.Status, u.Due)
+	_, err := m.CreateTask(ctx, u.Kind, u.ID, u.Etag, u.Title, u.Updated, u.SelfLink, u.Position, u.Status, u.Due)
 	assert.Nil(t, err)
 	assert.NotNil(t, u.Updated)
 }
 
 func Test_SearchAndFind(t *testing.T) {
+	ctx := context.Background()
 	repo := task.NewInmem()
 	m := task.NewService(repo)
-	
-	u1 := newFixtureTask()
-	// u2 := newFixtureBook()
-	// u2.Title = "Lemmy: Biography"
 
-	uID, _ := m.CreateTask(u1.Kind, u1.ID, u1.Etag, u1.Title, u1.Updated, u1.SelfLink, u1.Position, u1.Status, u1.Due)
-	// _, _ = m.CreateBook(u2.Title, u2.Author, u2.Pages, u2.Quantity)
+	u1 := newFixtureTask()
+
+	uID, _ := m.CreateTask(ctx, u1.Kind, u1.ID, u1.Etag, u1.Title, u1.Updated, u1.SelfLink, u1.Position, u1.Status, u1.Due)
 
 	// t.Run("search", func(t *testing.T) {
 	// 	c, err := m.SearchBooks("ozzy")
@@ -60,7 +61,7 @@ func Test_SearchAndFind(t *testing.T) {
 	// })
 
 	t.Run("get", func(t *testing.T) {
-		saved, err := m.GetTask(uID)
+		saved, err := m.GetTask(ctx, uID)
 		assert.Nil(t, err)
 		assert.Equal(t, u1.Title, saved.Title)
 	})
